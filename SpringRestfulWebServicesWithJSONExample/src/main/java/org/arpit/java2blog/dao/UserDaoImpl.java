@@ -28,6 +28,7 @@ import org.arpit.java2blog.model.UserGameResponse;
 import org.arpit.java2blog.model.UserInput;
 import org.arpit.java2blog.model.UserMapper;
 import org.arpit.java2blog.model.UserRSSI;
+import org.arpit.java2blog.util.NotificationUtil;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.mail.MailException;
@@ -137,20 +138,45 @@ public class UserDaoImpl implements UserDao {
 		}
 	}
 
-	private void sendConnectionInvite(UserConnectionInfo userConnectionInfo) {
-		String sql = "INSERT INTO table (user_id, bluetooth_address, wifi_address) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE "
-				+ "bluetooth_address = '" + userConnectionInfo.getBluetoothAddress() + "', wifi_address = '" + userConnectionInfo.getWifiAddress() + "'";
-		jdbcTemplateObject.update(sql, new Object[] { userConnectionInfo.getUserId(), userConnectionInfo.getBluetoothAddress(),
-				userConnectionInfo.getWifiAddress()});
+	@Override
+	public void sendConnectionInvite(UserConnectionInfo userConnectionInfo) {
+		String whereIn = "(";
+		int size = userConnectionInfo.getRemoteUserIds().size();
+		
+		for (int i = 0; i < size; i++) {
+			if( i != size - 1 ) {
+				whereIn += userConnectionInfo.getRemoteUserIds().get(i) + ",";
+			}
+			else {
+				whereIn += userConnectionInfo.getRemoteUserIds().get(i) + ")";
+			}
+		}
+		
+		String idQuery = "select device_token from user ua where ua.id in " + whereIn;
+
+		List<String> deviceTokens = (List<String>) jdbcTemplateObject.query(idQuery,
+				new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return rs.getString(1);
+			}
+		});
+		NotificationUtil.sendBluetoothInvitation(userConnectionInfo.getUserId(), deviceTokens);
 	}
-	
-	private void getUserInput(UserInput input) {
-		String sql = "INSERT INTO table (user_id, bluetooth_address, wifi_address) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE "
-				+ "bluetooth_address = '" + input.getBluetoothAddress() + "', wifi_address = '" + input.getWifiAddress() + "'";
-		jdbcTemplateObject.update(sql, new Object[] { input.getUserId(), input.getBluetoothAddress(),
-				input.getWifiAddress()});
+
+	@Override
+	public void sendRemoteUserInput(UserInput input) {
+		String idQuery = "select device_token from user ua where ua.id = " + input.getToUserId();
+
+		String deviceToken = (String) jdbcTemplateObject.queryForObject(idQuery, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return rs.getString(1);
+			}
+		});
+		NotificationUtil.sendBluetoothAddress(input.getUserId(), deviceToken, input.getBluetoothAddress());
 	}
-	
+
 	public User findByEmail(String email) {
 		String sql = "select * from user where email = ?";
 		User user = (User) jdbcTemplateObject.queryForObject(sql, new Object[] { email }, new UserMapper());
@@ -240,7 +266,7 @@ public class UserDaoImpl implements UserDao {
 				Map uploadResult = cloudinary.uploader().upload(filePath, ObjectUtils.emptyMap());
 				String imagePath = (String) uploadResult.get("secure_url");
 				fileToUpload.delete();
-				
+
 				return imagePath;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -248,7 +274,7 @@ public class UserDaoImpl implements UserDao {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Object getGameList() {
 		String sql = "select id as gameId, game_package_name as gamePackageName, game_image_path as gameImagePath,"
@@ -280,9 +306,9 @@ public class UserDaoImpl implements UserDao {
 
 		System.out.println("SQL statement->" + sql);
 		jdbcTemplateObject.update(sql,
-				new Object[] { gameData.getGameName(), gameData.getGameStudioName(), imagePath,
-						gameData.getAgeRating(), gameData.getOsType(), gameData.getNetworkType(),
-						gameData.getMinPlayers(), gameData.getMaxPlayers() });
+				new Object[] { gameData.getGameName(), gameData.getGameStudioName(), imagePath, gameData.getAgeRating(),
+						gameData.getOsType(), gameData.getNetworkType(), gameData.getMinPlayers(),
+						gameData.getMaxPlayers() });
 	}
 
 	@Override
@@ -319,8 +345,8 @@ public class UserDaoImpl implements UserDao {
 				+ availablity.getAvailablity() + ", latitude = " + availablity.getLatitude() + "," + "longitude = "
 				+ availablity.getLongitude() + ",updated_at = now()";
 
-		jdbcTemplateObject.update(sql, new Object[] { availablity.getUserId(), availablity.getAvailablity(), availablity.getLatitude(),
-				availablity.getLongitude()});
+		jdbcTemplateObject.update(sql, new Object[] { availablity.getUserId(), availablity.getAvailablity(),
+				availablity.getLatitude(), availablity.getLongitude() });
 	}
 
 	@SuppressWarnings("unchecked")
@@ -341,8 +367,8 @@ public class UserDaoImpl implements UserDao {
 				+ "join game_library gl on gl.id = gf.game_id join user u on u.id = gf.user_id where "
 				+ "u.id in (select u.id from user u join user_availability ua on u.id = ua.user_id "
 				+ "where ua.availability = 1 and (ua.latitude -  " + latitude + ") < 10 ) "
-				+ "and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id = " + userId + ")and u.id <> " + userId
-				+ " group by u.id";
+				+ "and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id = " + userId
+				+ ")and u.id <> " + userId + " group by u.id";
 
 		java.util.List<UserGameResponse> userGameResponse = (List<UserGameResponse>) jdbcTemplateObject.query(sql,
 				new RowMapper<UserGameResponse>() {
@@ -382,6 +408,43 @@ public class UserDaoImpl implements UserDao {
 				});
 
 		return userGameResponse;
+
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<GameDataModel> getMutualGames(long userId, ArrayList<Long> userIds) {
+		String whereIn = "(";
+		for (int i = 0; i < userIds.size(); i++) {
+			if( i != userIds.size() - 1 ) {
+				whereIn += userIds.get(i) + ",";
+			}
+			else {
+				whereIn += userIds.get(i) + ")";
+			}
+		}
+		
+		String sql = "select gl.game_name, gl.id as game_id, gl.game_image_path, gl.network_type from game_library gl join " +
+					"(select count(game_id) as cg, game_id, " +
+					"group_concat(user_id) as users from game_profile " +
+					"where user_id in " + whereIn +
+					"group by game_id) as cgk on cgk.game_id = gl.id " +
+					"where cgk.cg > " + (userIds.size() - 1);
+
+		java.util.List<GameDataModel> gameResponse = (List<GameDataModel>) jdbcTemplateObject.query(sql,
+				new RowMapper<GameDataModel>() {
+					@Override
+					public GameDataModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+						GameDataModel gameResponse = new GameDataModel();
+						gameResponse.setGameId(rs.getLong("game_id"));
+						gameResponse.setGameImagePath(rs.getString("game_image_path"));
+						gameResponse.setGameName(rs.getString("game_name"));
+						gameResponse.setGameNetworkType(rs.getInt("network_type"));
+						
+						return gameResponse;
+					}
+				});
+
+		return gameResponse;
 
 	}
 }

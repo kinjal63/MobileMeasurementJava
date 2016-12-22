@@ -5,6 +5,14 @@ public class GameDataModel {
 	private String gamePackageName;
 	private long gameId;
 	private String gameImagePath;
+	private int gameNetworkType;
+	
+	public int getGameNetworkType() {
+		return gameNetworkType;
+	}
+	public void setGameNetworkType(int gameNetworkType) {
+		this.gameNetworkType = gameNetworkType;
+	}
 	public String getGameName() {
 		return gameName;
 	}

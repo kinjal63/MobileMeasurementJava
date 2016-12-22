@@ -1,33 +1,21 @@
 package org.arpit.java2blog.model;
 
+import java.util.ArrayList;
+
 public class UserConnectionInfo {
-	private String userId;
-	private String toUserId;
-	private String bluetoothAddress;
-	private String wifiAddress;
+	private long userId;
+	private ArrayList<Long> remoteUserIds;
 	
-	public String getUserId() {
+	public long getUserId() {
 		return userId;
 	}
-	public String getToUserId() {
-		return toUserId;
+	public ArrayList<Long> getRemoteUserIds() {
+		return remoteUserIds;
 	}
-	public String getBluetoothAddress() {
-		return bluetoothAddress;
-	}
-	public String getWifiAddress() {
-		return wifiAddress;
-	}
-	public void setUserId(String userId) {
+	public void setUserId(long userId) {
 		this.userId = userId;
 	}
-	public void setToUserId(String toUserId) {
-		this.toUserId = toUserId;
-	}
-	public void setBluetoothAddress(String bluetoothAddress) {
-		this.bluetoothAddress = bluetoothAddress;
-	}
-	public void setWifiAddress(String wifiAddress) {
-		this.wifiAddress = wifiAddress;
+	public void setRemoteUserIds(ArrayList<Long> remoteUserIds) {
+		this.remoteUserIds = remoteUserIds;
 	}
 }

@@ -1,12 +1,16 @@
 package org.arpit.java2blog.service;
 
+import java.util.ArrayList;
+
 import org.arpit.java2blog.dao.UserDao;
 import org.arpit.java2blog.model.AppData;
 import org.arpit.java2blog.model.CallDuration;
 import org.arpit.java2blog.model.GameData;
 import org.arpit.java2blog.model.User;
 import org.arpit.java2blog.model.UserAvailablity;
+import org.arpit.java2blog.model.UserConnectionInfo;
 import org.arpit.java2blog.model.UserDataUsage;
+import org.arpit.java2blog.model.UserInput;
 import org.arpit.java2blog.model.UserRSSI;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -70,6 +74,19 @@ public class RssiServiceImpl implements RssiService {
 	@Override
 	public void deleteGame(long gameId) {
 		userDao.deleteGame(gameId);
+	}
+	
+	public void sendConnectionInvite(UserConnectionInfo userConnectionInfo) {
+		userDao.sendConnectionInvite(userConnectionInfo);
+	}
+	
+	public void sendRemoteUserInput(UserInput userInput) {
+		userDao.sendRemoteUserInput(userInput);
+	}
+	
+	@Override
+	public Object getMutualGameList(long userId, ArrayList<Long> userIds) {
+		return userDao.getMutualGames(userId, userIds);
 	}
 	
 }

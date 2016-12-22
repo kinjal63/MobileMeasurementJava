@@ -25,10 +25,13 @@ import org.arpit.java2blog.model.CallDuration;
 import org.arpit.java2blog.model.GameData;
 import org.arpit.java2blog.model.GameInfo;
 import org.arpit.java2blog.model.LoginREQ;
+import org.arpit.java2blog.model.ResponseGame;
 import org.arpit.java2blog.model.User;
 import org.arpit.java2blog.model.UserAvailablity;
+import org.arpit.java2blog.model.UserConnectionInfo;
 import org.arpit.java2blog.model.UserDataUsage;
 import org.arpit.java2blog.model.UserInfo;
+import org.arpit.java2blog.model.UserInput;
 import org.arpit.java2blog.model.UserRSSI;
 import org.arpit.java2blog.model.UserResponse;
 import org.arpit.java2blog.service.RssiService;
@@ -260,6 +263,30 @@ public class CountryController {
 	Object deleteGame(@RequestParam("gameId") long gameId, HttpServletRequest httpSerfvletRequest) {
 		rssiService.deleteGame(gameId);
 		return "Game is deleted.";
+	}
+	
+	@RequestMapping(value = "/sendConnectionInvite", method = RequestMethod.POST)
+	public @ResponseBody
+	Object sendConnectionInvite(@RequestBody UserConnectionInfo userConnectionInfo, HttpServletRequest httpSerfvletRequest) {
+		rssiService.sendConnectionInvite(userConnectionInfo);
+		return "Invitation is sent.";
+	}
+	
+	@RequestMapping(value = "/sendRemoteUserInput", method = RequestMethod.POST)
+	public @ResponseBody
+	Object sendRemoteUserInput(@RequestBody UserInput userInput, HttpServletRequest httpSerfvletRequest) {
+		rssiService.sendRemoteUserInput(userInput);
+		return "Invitation is sent.";
+	}
+	
+	@RequestMapping(value = "/getMutualGames", method = RequestMethod.POST)
+	public @ResponseBody
+	Object getMutualGames(@RequestBody UserConnectionInfo userConnectionInfo,
+			HttpServletRequest httpSerfvletRequest) {
+		ResponseGame resGame = new ResponseGame();
+		resGame.setUserDetails(rssiService.getMutualGameList(userConnectionInfo.getUserId(), userConnectionInfo.getRemoteUserIds()));
+		
+		return resGame;
 	}
 	
 	private static String sendNotification()
