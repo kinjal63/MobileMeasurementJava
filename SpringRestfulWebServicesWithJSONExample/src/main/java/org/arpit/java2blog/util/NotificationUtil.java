@@ -81,4 +81,40 @@ public class NotificationUtil {
 		}
 	}
 
+	public static void notifyOtherUsers(final long userId, final List<String> deviceTokens) {
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					for (String deviceToken : deviceTokens) {
+						JsonObject jsonObject = new JsonObject();
+						jsonObject.addProperty("remote_user_id", userId);
+						jsonObject.addProperty("notification_message", 1);
+
+						Sender sender = new FCMSender(serverKey);
+						Message message = new Message.Builder().collapseKey("message").timeToLive(3)
+								.delayWhileIdle(true).addData("message", jsonObject.toString()).build();
+
+						// Use the same token(or registration id) that was
+						// earlier
+						// used to send the message to the client directly from
+						// Firebase Console's Notification tab.
+						Result result = sender.send(message, deviceToken, 1);
+						System.out.println("Result: " + result.toString());
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+		});
+		t.start();
+		try {
+			t.join();
+		} catch (InterruptedException iex) {
+			iex.printStackTrace();
+		}
+	}
+
 }

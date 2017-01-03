@@ -28,4 +28,5 @@ public interface RssiService {
 	void sendConnectionInvite(UserConnectionInfo userConnectionInfo);
 	void sendRemoteUserInput(UserInput userInput);
 	Object getMutualGameList(long userId, ArrayList<Long> userIds);
+	void addUserAvailabilityTime(long userId, String fromTime, String toTime);
 }

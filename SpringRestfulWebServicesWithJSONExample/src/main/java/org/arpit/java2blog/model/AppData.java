@@ -2,8 +2,22 @@ package org.arpit.java2blog.model;
 
 public class AppData {
 	private long userId;
+	private double latitude;
+	private double longitude;
 	private AppDetail[] appDetail;
 	
+	public double getLatitude() {
+		return latitude;
+	}
+	public double getLongitude() {
+		return longitude;
+	}
+	public void setLatitude(double latitude) {
+		this.latitude = latitude;
+	}
+	public void setLongitude(double longitude) {
+		this.longitude = longitude;
+	}
 	public long getUserId() {
 		return userId;
 	}

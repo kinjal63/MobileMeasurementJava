@@ -34,6 +34,7 @@ import org.arpit.java2blog.model.UserInfo;
 import org.arpit.java2blog.model.UserInput;
 import org.arpit.java2blog.model.UserRSSI;
 import org.arpit.java2blog.model.UserResponse;
+import org.arpit.java2blog.model.UserTimeModel;
 import org.arpit.java2blog.service.RssiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -214,13 +215,6 @@ public class CountryController {
 		return userInfo;
 	}
 	
-//	@RequestMapping(value = "/editGame", method = RequestMethod.POST)
-//	public @ResponseBody
-//	Object editGame(GameData gameData, HttpServletRequest httpSerfvletRequest) {
-//		rssiService.editGame(gameData);
-//		return "Game is edited.";
-//	}
-	
 	@RequestMapping(value = "/getGameList", method = RequestMethod.POST)
 	public @ResponseBody
 	Object getGameList(HttpServletRequest httpSerfvletRequest) {
@@ -274,7 +268,15 @@ public class CountryController {
 	
 	@RequestMapping(value = "/sendRemoteUserInput", method = RequestMethod.POST)
 	public @ResponseBody
-	Object sendRemoteUserInput(@RequestBody UserInput userInput, HttpServletRequest httpSerfvletRequest) {
+	Object sendRemoteUserInput(@RequestParam("userId") long userId, @RequestParam("toUserId") long toUserId,
+			@RequestParam("bluetoothAddress") String bluetoothAddress,
+			@RequestParam("accept") boolean accept, HttpServletRequest httpSerfvletRequest) {
+		UserInput userInput = new UserInput();
+		userInput.setFromUserId(userId);
+		userInput.setToUserId(toUserId);
+		userInput.setBluetoothAddress(bluetoothAddress);
+		userInput.setAccept(accept);
+		
 		rssiService.sendRemoteUserInput(userInput);
 		return "Invitation is sent.";
 	}
@@ -287,6 +289,16 @@ public class CountryController {
 		resGame.setUserDetails(rssiService.getMutualGameList(userConnectionInfo.getUserId(), userConnectionInfo.getRemoteUserIds()));
 		
 		return resGame;
+	}
+	
+	@RequestMapping(value = "/addUserTime", method = RequestMethod.POST)
+	public @ResponseBody
+	Object addUserTime(@RequestParam("userId") long userId, @RequestParam("fromTime") String fromTime,
+			@RequestParam("toTime") String toTime,
+			HttpServletRequest httpSerfvletRequest) {
+		rssiService.addUserAvailabilityTime(userId, fromTime, toTime);
+		
+		return "Time entry is added.";
 	}
 	
 	private static String sendNotification()

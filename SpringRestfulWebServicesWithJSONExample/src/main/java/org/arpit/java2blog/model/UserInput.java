@@ -4,15 +4,15 @@ public class UserInput {
 	private long userId;
 	private long toUserId;
 	private String bluetoothAddress;
-	private String wifiAddress;
+//	private String wifiAddress;
 	private boolean accept;
 	
 	public String getBluetoothAddress() {
 		return bluetoothAddress;
 	}
-	public String getWifiAddress() {
-		return wifiAddress;
-	}
+//	public String getWifiAddress() {
+//		return wifiAddress;
+//	}
 	public boolean isAccept() {
 		return accept;
 	}
@@ -31,9 +31,9 @@ public class UserInput {
 	public void setBluetoothAddress(String bluetoothAddress) {
 		this.bluetoothAddress = bluetoothAddress;
 	}
-	public void setWifiAddress(String wifiAddress) {
-		this.wifiAddress = wifiAddress;
-	}
+//	public void setWifiAddress(String wifiAddress) {
+//		this.wifiAddress = wifiAddress;
+//	}
 	public void setAccept(boolean accept) {
 		this.accept = accept;
 	}

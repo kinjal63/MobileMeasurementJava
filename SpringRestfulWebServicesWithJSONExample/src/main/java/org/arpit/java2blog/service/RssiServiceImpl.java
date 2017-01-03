@@ -89,4 +89,7 @@ public class RssiServiceImpl implements RssiService {
 		return userDao.getMutualGames(userId, userIds);
 	}
 	
+	public void addUserAvailabilityTime(long userId, String fromTime, String toTime) {
+		userDao.addUserAvailabilityTime(userId, fromTime, toTime);
+	}
 }

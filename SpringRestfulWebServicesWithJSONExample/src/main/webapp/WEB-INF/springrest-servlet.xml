@@ -2,14 +2,20 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:task="http://www.springframework.org/schema/task"
+	
 	xsi:schemaLocation=" http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context 
-        http://www.springframework.org/schema/context/spring-context-3.0.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+        http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
 
 	<mvc:annotation-driven />
+	<task:annotation-driven />
+	
 	<context:component-scan base-package="org.arpit.java2blog.controller" />
 	<context:component-scan base-package="org.arpit.java2blog.dao" />
 	<context:component-scan base-package="org.arpit.java2blog.service" />
 	<context:component-scan base-package="org.arpit.java2blog.model" />
+	<context:component-scan base-package="org.arpit.java2blog.schedule" />
 
 	<!-- jdbcTemplate uses dataSource -->
 	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">

@@ -7,6 +7,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +18,6 @@ import javax.sql.DataSource;
 
 import org.arpit.java2blog.model.Aggregate;
 import org.arpit.java2blog.model.AppData;
-import org.arpit.java2blog.model.AppDetail;
 import org.arpit.java2blog.model.CallDuration;
 import org.arpit.java2blog.model.DataUsageMapper;
 import org.arpit.java2blog.model.GameData;
@@ -31,6 +33,7 @@ import org.arpit.java2blog.model.UserRSSI;
 import org.arpit.java2blog.util.NotificationUtil;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -142,20 +145,18 @@ public class UserDaoImpl implements UserDao {
 	public void sendConnectionInvite(UserConnectionInfo userConnectionInfo) {
 		String whereIn = "(";
 		int size = userConnectionInfo.getRemoteUserIds().size();
-		
+
 		for (int i = 0; i < size; i++) {
-			if( i != size - 1 ) {
+			if (i != size - 1) {
 				whereIn += userConnectionInfo.getRemoteUserIds().get(i) + ",";
-			}
-			else {
+			} else {
 				whereIn += userConnectionInfo.getRemoteUserIds().get(i) + ")";
 			}
 		}
-		
+
 		String idQuery = "select device_token from user ua where ua.id in " + whereIn;
 
-		List<String> deviceTokens = (List<String>) jdbcTemplateObject.query(idQuery,
-				new RowMapper<String>() {
+		List<String> deviceTokens = (List<String>) jdbcTemplateObject.query(idQuery, new RowMapper<String>() {
 			@Override
 			public String mapRow(ResultSet rs, int rowNum) throws SQLException {
 				return rs.getString(1);
@@ -234,8 +235,14 @@ public class UserDaoImpl implements UserDao {
 		}
 		sql1 += whereIn;
 		sql += sql1;
+		
+		String insertAvailability = "insert into user_availability (user_id, latitude, "
+				+ "longitude, availability, os_type, updated_at) values(?, ?, ?, 0, 1, now())";
+		
 		System.out.println("SQL statement->" + sql1);
-		jdbcTemplateObject.update(sql, new Object[] {});
+		jdbcTemplateObject.update(sql, new Object[]{});
+		jdbcTemplateObject.update(insertAvailability, new Object[] {appData.getUserId(), appData.getLatitude(), 
+				appData.getLongitude()});
 	}
 
 	public void addGameInfo(GameData gameData) {
@@ -320,24 +327,6 @@ public class UserDaoImpl implements UserDao {
 		jdbcTemplateObject.execute(sql);
 	}
 
-	public static void main(String[] args) {
-		UserDaoImpl impl = new UserDaoImpl();
-		// impl.aggregateCallDuration(null);
-		AppData appData = new AppData();
-		appData.setUserId(31);
-
-		AppDetail[] appDetail = new AppDetail[2];
-
-		appDetail[0].setAppName("abc");
-		appDetail[1].setAppPackageName("com.insta");
-
-		appDetail[1].setAppName("abc1");
-		appDetail[2].setAppPackageName("com.insta1");
-		appData.setAppDetail(appDetail);
-
-		impl.saveAppData(appData);
-	}
-
 	@Override
 	public void updateUserAvailablity(UserAvailablity availablity) {
 		String sql = "insert into user_availability (user_id, availability, latitude, longitude, updated_at) values(?, ?, ?, ?, now())"
@@ -410,25 +399,22 @@ public class UserDaoImpl implements UserDao {
 		return userGameResponse;
 
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<GameDataModel> getMutualGames(long userId, ArrayList<Long> userIds) {
 		String whereIn = "(";
 		for (int i = 0; i < userIds.size(); i++) {
-			if( i != userIds.size() - 1 ) {
+			if (i != userIds.size() - 1) {
 				whereIn += userIds.get(i) + ",";
-			}
-			else {
+			} else {
 				whereIn += userIds.get(i) + ")";
 			}
 		}
-		
-		String sql = "select gl.game_name, gl.id as game_id, gl.game_image_path, gl.network_type from game_library gl join " +
-					"(select count(game_id) as cg, game_id, " +
-					"group_concat(user_id) as users from game_profile " +
-					"where user_id in " + whereIn +
-					"group by game_id) as cgk on cgk.game_id = gl.id " +
-					"where cgk.cg > " + (userIds.size() - 1);
+
+		String sql = "select gl.game_name, gl.id as game_id, gl.game_image_path, gl.network_type from game_library gl join "
+				+ "(select count(game_id) as cg, game_id, " + "group_concat(user_id) as users from game_profile "
+				+ "where user_id in " + whereIn + "group by game_id) as cgk on cgk.game_id = gl.id " + "where cgk.cg > "
+				+ (userIds.size() - 1);
 
 		java.util.List<GameDataModel> gameResponse = (List<GameDataModel>) jdbcTemplateObject.query(sql,
 				new RowMapper<GameDataModel>() {
@@ -439,12 +425,110 @@ public class UserDaoImpl implements UserDao {
 						gameResponse.setGameImagePath(rs.getString("game_image_path"));
 						gameResponse.setGameName(rs.getString("game_name"));
 						gameResponse.setGameNetworkType(rs.getInt("network_type"));
-						
+
 						return gameResponse;
 					}
 				});
 
 		return gameResponse;
 
+	}
+
+	@SuppressWarnings("unused")
+	@Override
+	public void addUserAvailabilityTime(long userId, String fromTime, String toTime) {
+		DateFormat formatter = new SimpleDateFormat("HH:mm");
+		
+		java.sql.Time fromTimeValue;
+		try {
+			fromTimeValue = new java.sql.Time(formatter.parse(fromTime).getTime());
+			java.sql.Time toTimeValue = new java.sql.Time(formatter.parse(toTime).getTime());
+			String sql = "insert into user_available_times (user_id, from_time, to_time, created_at) "
+					+ "values (?, ?, ?, now())";
+			String sql1 = "insert into user_notifications "
+					+ "(user_id, notification_sent, sent_at) values (?, 0, now())";
+			jdbcTemplateObject.update(sql, new Object[] { userId, fromTimeValue, toTimeValue });
+			jdbcTemplateObject.update(sql1, new Object[] { userId });
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void updateAndNotifyNearByUsers() {
+		List<Long> availableUsers = getAvailableUsers();
+		updateUsersAvailability(availableUsers);
+		notifyNearByUsers(availableUsers);
+	}
+
+	private List<Long> getAvailableUsers() {
+		String sql = "select uat.user_id from user_available_times uat " + "join user u on uat.user_id = u.id "
+				+ "join user_notifications un on uat.user_id = un.user_id "
+				+ "where uat.from_time < now() and uat.to_time > now() and un.notification_sent = 0";
+
+		List<Long> userIds = (List<Long>) jdbcTemplateObject.query(sql, new RowMapper<Long>() {
+			@Override
+			public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+				// TODO Auto-generated method stub
+				return rs.getLong("user_id");
+			}
+		});
+		return userIds;
+	}
+	
+	private void updateUsersAvailability(List<Long> userIds) {
+		String whereIn = "";
+		for (int i = 0; i < userIds.size(); i++) {
+			if (i != userIds.size() - 1) {
+				whereIn += userIds.get(i) + ",";
+			} else {
+				whereIn += userIds.get(i);
+			}
+		}
+
+		if( userIds.size() > 0 ) {
+			String sql = "update user_availability ua set ua.availability = 1 where user_id in (" + whereIn + ")";
+			jdbcTemplateObject.update(sql);
+		}
+	}
+
+	private void notifyNearByUsers(List<Long> userIds) {
+		for(Long userId : userIds) {
+			String latSql = "select ua.latitude from user_availability ua where ua.user_id = " + userId;
+			Long latitude = (Long)jdbcTemplateObject.queryForObject(latSql, new RowMapper<Long>() {
+				@Override
+				public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+					return rs.getLong("latitude");
+				}
+			});
+			
+			String sql = "select u.id as user_id, u.device_token, u.firstname, u.lastname " +
+			"from game_profile gf " + 
+			"inner join game_profile gf1 on gf.game_id = gf1.game_id and gf.user_id <> gf1.user_id " +
+			"join game_library gl on gl.id = gf.game_id join user u on u.id = gf.user_id where " +
+			"u.id in (select u.id from user u join user_availability ua on u.id = ua.user_id " +
+			"where ua.availability = 1 and (ua.latitude - " + latitude + ") < 10 ) " +
+			"and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id <> " + userId +
+			")and u.id <> " + userId + " group by u.id";
+			
+			@SuppressWarnings("unchecked")
+			List<String> deviceTokens = (List<String>)jdbcTemplateObject.query(sql, new RowMapper() {
+
+				@Override
+				public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+					return rs.getString("device_token");
+				}
+			});
+			
+			NotificationUtil.notifyOtherUsers(userId, deviceTokens);
+			updateNotifications(userId);
+		}
+	}
+	
+	private void updateNotifications(long userId) {
+		String sql = "insert into user_notifications (user_id, notification_sent, sent_at) values ("
+				+ userId + ", 1, now()) on duplicate key update notification_sent = 1";
+		jdbcTemplateObject.update(sql);
 	}
 }

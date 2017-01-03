@@ -28,4 +28,6 @@ public interface UserDao {
 	void sendConnectionInvite(UserConnectionInfo userConnectionInfo);
 	void sendRemoteUserInput(UserInput userInput);
 	Object getMutualGames(long userId, ArrayList<Long> userIds);
+	void addUserAvailabilityTime(long userId, String fromTime, String toTime);
+	void updateAndNotifyNearByUsers();
 }
