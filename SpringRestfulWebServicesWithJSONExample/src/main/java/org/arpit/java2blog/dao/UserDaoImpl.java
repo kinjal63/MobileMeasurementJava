@@ -16,6 +16,7 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.arpit.java2blog.mapper.NearByUserRowMapper;
 import org.arpit.java2blog.model.Aggregate;
 import org.arpit.java2blog.model.AppData;
 import org.arpit.java2blog.model.CallDuration;
@@ -30,6 +31,7 @@ import org.arpit.java2blog.model.UserGameResponse;
 import org.arpit.java2blog.model.UserInput;
 import org.arpit.java2blog.model.UserMapper;
 import org.arpit.java2blog.model.UserRSSI;
+import org.arpit.java2blog.model.db.NearByUserDBModel;
 import org.arpit.java2blog.util.NotificationUtil;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -162,7 +164,13 @@ public class UserDaoImpl implements UserDao {
 				return rs.getString(1);
 			}
 		});
-		NotificationUtil.sendBluetoothInvitation(userConnectionInfo.getUserId(), deviceTokens);
+		if( userConnectionInfo.getWifiDeviceAddress() != null ) {
+			NotificationUtil.sendWifiInvitation(userConnectionInfo.getUserId(), 
+					userConnectionInfo.getWifiDeviceAddress(), deviceTokens);	
+		}
+		else {
+			NotificationUtil.sendBluetoothInvitation(userConnectionInfo.getUserId(), deviceTokens);
+		}
 	}
 
 	@Override
@@ -402,6 +410,7 @@ public class UserDaoImpl implements UserDao {
 
 	@SuppressWarnings("unchecked")
 	public List<GameDataModel> getMutualGames(long userId, ArrayList<Long> userIds) {
+		userIds.add(userId);
 		String whereIn = "(";
 		for (int i = 0; i < userIds.size(); i++) {
 			if (i != userIds.size() - 1) {
@@ -411,7 +420,7 @@ public class UserDaoImpl implements UserDao {
 			}
 		}
 
-		String sql = "select gl.game_name, gl.id as game_id, gl.game_image_path, gl.network_type from game_library gl join "
+		String sql = "select gl.game_name, gl.game_package_name, gl.id as game_id, gl.game_image_path, gl.network_type from game_library gl join "
 				+ "(select count(game_id) as cg, game_id, " + "group_concat(user_id) as users from game_profile "
 				+ "where user_id in " + whereIn + "group by game_id) as cgk on cgk.game_id = gl.id " + "where cgk.cg > "
 				+ (userIds.size() - 1);
@@ -425,6 +434,7 @@ public class UserDaoImpl implements UserDao {
 						gameResponse.setGameImagePath(rs.getString("game_image_path"));
 						gameResponse.setGameName(rs.getString("game_name"));
 						gameResponse.setGameNetworkType(rs.getInt("network_type"));
+						gameResponse.setGamePackageName(rs.getString("game_package_name"));
 
 						return gameResponse;
 					}
@@ -463,9 +473,10 @@ public class UserDaoImpl implements UserDao {
 	}
 
 	private List<Long> getAvailableUsers() {
-		String sql = "select uat.user_id from user_available_times uat " + "join user u on uat.user_id = u.id "
-				+ "join user_notifications un on uat.user_id = un.user_id "
-				+ "where uat.from_time < now() and uat.to_time > now() and un.notification_sent = 0";
+		String sql = "select uat.user_id from user_available_times uat " +
+				"left join user_notifications un on uat.user_id = un.user_id " +
+				"join user u on uat.user_id = u.id " + 
+				"where uat.from_time < now() and uat.to_time > now() and un.user_id is null";
 
 		List<Long> userIds = (List<Long>) jdbcTemplateObject.query(sql, new RowMapper<Long>() {
 			@Override
@@ -505,30 +516,129 @@ public class UserDaoImpl implements UserDao {
 			
 			String sql = "select u.id as user_id, u.device_token, u.firstname, u.lastname " +
 			"from game_profile gf " + 
-			"inner join game_profile gf1 on gf.game_id = gf1.game_id and gf.user_id <> gf1.user_id " +
 			"join game_library gl on gl.id = gf.game_id join user u on u.id = gf.user_id where " +
 			"u.id in (select u.id from user u join user_availability ua on u.id = ua.user_id " +
-			"where ua.availability = 1 and (ua.latitude - " + latitude + ") < 10 ) " +
-			"and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id <> " + userId +
-			")and u.id <> " + userId + " group by u.id";
+			"where ua.availability = 1 and abs(ua.latitude - " + latitude + ") < 10 ) " +
+			"and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id = " + userId +
+			") and u.id <> " + userId + " group by u.id";
 			
 			@SuppressWarnings("unchecked")
-			List<String> deviceTokens = (List<String>)jdbcTemplateObject.query(sql, new RowMapper() {
-
-				@Override
-				public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
-					return rs.getString("device_token");
-				}
-			});
+			List<NearByUserDBModel> nearByUserModels = (List<NearByUserDBModel>)jdbcTemplateObject.query(sql, new NearByUserRowMapper());
 			
+			List<String> deviceTokens = new ArrayList<>();
+			List<Long> neighbourUserIds = new ArrayList<>();
+			for( NearByUserDBModel model : nearByUserModels ) {
+				deviceTokens.add(model.getDeviceToken());
+				neighbourUserIds.add(model.getUserId());
+			}
 			NotificationUtil.notifyOtherUsers(userId, deviceTokens);
-			updateNotifications(userId);
+			updateNotifications(userId, neighbourUserIds);
 		}
 	}
 	
-	private void updateNotifications(long userId) {
-		String sql = "insert into user_notifications (user_id, notification_sent, sent_at) values ("
-				+ userId + ", 1, now()) on duplicate key update notification_sent = 1";
+	private void updateNotifications(long userId, List<Long> userIds) {
+		
+		String sql = "insert into user_notifications (user_id, neighbour_user_id, notification_sent, sent_at)"
+				+ " values (?, ?, ?, now()) on duplicate key update notification_sent = 1";
+		try {
+			PreparedStatement ps = dataSource.getConnection().prepareStatement(sql);
+			for (Long user : userIds) {
+			    ps.setLong(1, userId);
+			    ps.setLong(2, user);
+			    ps.setInt(3, 1);
+			    ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String sql1 = "insert into user_notifications (user_id, neighbour_user_id, notification_sent, sent_at)"
+				+ " values (?, ?, ?, now()) on duplicate key update notification_sent = 1";
+		try {
+			PreparedStatement ps = dataSource.getConnection().prepareStatement(sql);
+			for (Long user : userIds) {
+			    ps.setLong(1, user);
+			    ps.setLong(2, userId);
+			    ps.setInt(3, 1);
+			    ps.addBatch();
+			}
+			ps.executeBatch();
+			
+			dataSource.getConnection().close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void checkUserAvailability() {
+		String sql = "select uat.user_id from user_available_times uat " +
+				 	 "where uat.from_time < now() and uat.to_time > now()";
+		@SuppressWarnings("unchecked")
+		List<Long> userIds = (List<Long>)jdbcTemplateObject.query(sql, new RowMapper() {
+			@Override
+			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return rs.getLong("user_id"); 
+			}
+		});
+		disableUserAvailability(userIds);
+		deleteNotificationsForUsers(userIds);
+	}
+	
+	private void disableUserAvailability(List<Long> userIds) {
+		String whereIn = "";
+		for (int i = 0; i < userIds.size(); i++) {
+			if (i != userIds.size() - 1) {
+				whereIn += userIds.get(i) + ",";
+			} else {
+				whereIn += userIds.get(i);
+			}
+		}
+		
+		String sql = "update user_availability ua set ua.availability = 0 where user_id not in (" + whereIn + ")";
 		jdbcTemplateObject.update(sql);
+	}
+	
+	private void deleteNotificationsForUsers(List<Long> userIds) {
+		String whereIn = "";
+		for (int i = 0; i < userIds.size(); i++) {
+			if (i != userIds.size() - 1) {
+				whereIn += userIds.get(i) + ",";
+			} else {
+				whereIn += userIds.get(i);
+			}
+		}
+		
+		for(Long userId : userIds) {
+			String latSql = "select ua.latitude from user_availability ua where ua.user_id = " + userId;
+			Long latitude = (Long)jdbcTemplateObject.queryForObject(latSql, new RowMapper<Long>() {
+				@Override
+				public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+					return rs.getLong("latitude");
+				}
+			});
+		String sqlStatement = "delete from user_notifications where " +
+					"(user_id = " + userId + " and neighbour_user_id not in  (select u.id as user_id " +
+					"from game_profile gf " +
+					"join game_library gl on gl.id = gf.game_id join user u on u.id = gf.user_id where " +
+					"u.id in (select u.id from user u join user_availability ua on u.id = ua.user_id " +
+					"where ua.availability = 1 and (abs(ua.latitude - " + latitude + ") < 10)) " +
+					"and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id = " + userId + ") " +
+					"and u.id <> " + userId + " group by u.id)) " +
+					
+ 					"or user_id not in (" + whereIn + ")" +
+
+					"or (user_id not in (select u.id as user_id " +
+					"from game_profile gf " +
+					"join game_library gl on gl.id = gf.game_id join user u on u.id = gf.user_id where " +
+					"u.id in (select u.id from user u join user_availability ua on u.id = ua.user_id " +
+					"where ua.availability = 1 and (abs(ua.latitude - " + latitude + ") < 10)) " +
+					"and gf.game_id in (select gf.game_id from game_profile gf where gf.user_id = " + userId + ") " +
+					"and u.id <> " + userId + " group by u.id) and neighbour_user_id = " + userId + ")";
+		
+			jdbcTemplateObject.execute(sqlStatement);
+		}
 	}
 }

@@ -46,6 +46,44 @@ public class NotificationUtil {
 			iex.printStackTrace();
 		}
 	}
+	
+	public static void sendWifiInvitation(final long userId, final String wifiAddress, final List<String> deviceTokens) {
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					for (String deviceToken : deviceTokens) {
+						JsonObject jsonObject = new JsonObject();
+						jsonObject.addProperty("remote_user_id", userId);
+						jsonObject.addProperty("connection_invite", 2);
+						jsonObject.addProperty("wifi_address", wifiAddress);
+						jsonObject.addProperty("message",
+								"Do you want to make Wifi direct connection with user " + userId);
+
+						Sender sender = new FCMSender(serverKey);
+						Message message = new Message.Builder().collapseKey("message").timeToLive(3)
+								.delayWhileIdle(true).addData("message", jsonObject.toString()).build();
+
+						// Use the same token(or registration id) that was
+						// earlier
+						// used to send the message to the client directly from
+						// Firebase Console's Notification tab.
+						Result result = sender.send(message, deviceToken, 1);
+						System.out.println("Result: " + result.toString());
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		t.start();
+		try {
+			t.join();
+		} catch (InterruptedException iex) {
+			iex.printStackTrace();
+		}
+	}
 
 	public static void sendBluetoothAddress(final long userId, final String deviceToken,
 			final String bluetoothAddress) {

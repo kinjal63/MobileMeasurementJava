@@ -30,4 +30,5 @@ public interface UserDao {
 	Object getMutualGames(long userId, ArrayList<Long> userIds);
 	void addUserAvailabilityTime(long userId, String fromTime, String toTime);
 	void updateAndNotifyNearByUsers();
+	void checkUserAvailability();
 }

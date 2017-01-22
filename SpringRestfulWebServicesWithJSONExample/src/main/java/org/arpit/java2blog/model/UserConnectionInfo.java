@@ -5,7 +5,14 @@ import java.util.ArrayList;
 public class UserConnectionInfo {
 	private long userId;
 	private ArrayList<Long> remoteUserIds;
+	private String wifiDeviceAddress;
 	
+	public String getWifiDeviceAddress() {
+		return wifiDeviceAddress;
+	}
+	public void setWifiDeviceAddress(String wifiDeviceAddress) {
+		this.wifiDeviceAddress = wifiDeviceAddress;
+	}
 	public long getUserId() {
 		return userId;
 	}

@@ -18,4 +18,10 @@ public class ScheduleService {
 	    {
 	        userDao.updateAndNotifyNearByUsers();
 	    }
+	    
+	    @Scheduled(fixedDelay = 20000)
+	    public void checkUserAvailability()
+	    {
+	        userDao.checkUserAvailability();
+	    }
 }
