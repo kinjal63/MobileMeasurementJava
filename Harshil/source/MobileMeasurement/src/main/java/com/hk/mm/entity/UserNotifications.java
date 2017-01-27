@@ -5,7 +5,6 @@ import java.sql.Date;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -17,6 +16,7 @@ import javax.persistence.Table;
 public class UserNotifications {
 
 	private long id;
+
 	private User user;
 	private long neighbourId;
 	private int notificationSent;
@@ -32,7 +32,8 @@ public class UserNotifications {
 	public void setId(long id) {
 		this.id = id;
 	}
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+
+	@OneToOne(cascade = CascadeType.ALL)
 	public User getUser() {
 		return user;
 	}
@@ -40,7 +41,8 @@ public class UserNotifications {
 	public void setUser(User user) {
 		this.user = user;
 	}
-	@Column(name="neighbour_user_id")
+
+	@Column(name = "neighbour_user_id")
 	public long getNeighbourId() {
 		return neighbourId;
 	}
@@ -49,7 +51,7 @@ public class UserNotifications {
 		this.neighbourId = neighbourId;
 	}
 
-	@Column(name="notification_sent")
+	@Column(name = "notification_sent")
 	public int getNotificationSent() {
 		return notificationSent;
 	}
@@ -57,6 +59,7 @@ public class UserNotifications {
 	public void setNotificationSent(int notificationSent) {
 		this.notificationSent = notificationSent;
 	}
+
 	@Column(name = "sent_at", columnDefinition = "DATETIME")
 	public Date getSentAt() {
 		return sentAt;

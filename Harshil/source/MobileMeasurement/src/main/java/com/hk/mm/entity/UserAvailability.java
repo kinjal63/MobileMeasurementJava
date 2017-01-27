@@ -5,7 +5,6 @@ import java.sql.Date;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -34,7 +33,8 @@ public class UserAvailability {
 	public void setId(long id) {
 		this.id = id;
 	}
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+
+	@OneToOne(cascade = CascadeType.ALL)
 	public User getUser() {
 		return user;
 	}
@@ -42,7 +42,8 @@ public class UserAvailability {
 	public void setUser(User user) {
 		this.user = user;
 	}
-	@Column(name="latitude")
+
+	@Column(name = "latitude")
 	public double getLatitude() {
 		return latitude;
 	}
@@ -51,7 +52,7 @@ public class UserAvailability {
 		this.latitude = latitude;
 	}
 
-	@Column(name="longitude")
+	@Column(name = "longitude")
 	public double getLongitude() {
 		return longitude;
 	}
@@ -60,7 +61,7 @@ public class UserAvailability {
 		this.longitude = longitude;
 	}
 
-	@Column(name="availability")
+	@Column(name = "availability")
 	public int getAvailability() {
 		return availability;
 	}
@@ -69,7 +70,7 @@ public class UserAvailability {
 		this.availability = availability;
 	}
 
-	@Column(name="os_type")
+	@Column(name = "os_type")
 	public int getOsType() {
 		return osType;
 	}

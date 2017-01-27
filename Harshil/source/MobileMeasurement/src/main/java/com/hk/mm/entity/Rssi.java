@@ -2,14 +2,11 @@ package com.hk.mm.entity;
 
 import java.sql.Date;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -17,7 +14,7 @@ import javax.persistence.Table;
 public class Rssi {
 
 	private long id;
-	private User user;
+	private long userId;
 	private double rssi;
 	private String deviceId;
 	private double longitude;
@@ -35,14 +32,13 @@ public class Rssi {
 	public void setId(long id) {
 		this.id = id;
 	}
-
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
-	public User getUser() {
-		return user;
+	@Column(name="userId")
+	public long getUserId() {
+		return userId;
 	}
 
-	public void setUser(User user) {
-		this.user = user;
+	public void setUserId(long userId) {
+		this.userId = userId;
 	}
 
 	@Column(name = "rssi")

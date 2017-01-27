@@ -31,7 +31,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<start-class>netgloo.Application</start-class>
+		<start-class>com.hk.mm.Application</start-class>
 		<java.version>1.8</java.version>
 	</properties>
 

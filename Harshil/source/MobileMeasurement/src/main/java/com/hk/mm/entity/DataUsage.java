@@ -2,14 +2,11 @@ package com.hk.mm.entity;
 
 import java.sql.Date;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -17,9 +14,7 @@ import javax.persistence.Table;
 public class DataUsage {
 
 	private long dataUsageId;
-
-	private User user;
-
+	private long userId;
 	private String deviceId;
 	private String country;
 	private long mobileRx;
@@ -41,14 +36,13 @@ public class DataUsage {
 	public void setDataUsageId(long dataUsageId) {
 		this.dataUsageId = dataUsageId;
 	}
-
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
-	public User getUser() {
-		return user;
+	
+	public long getUserId() {
+		return userId;
 	}
 
-	public void setUser(User user) {
-		this.user = user;
+	public void setUserId(long userId) {
+		this.userId = userId;
 	}
 
 	@Column(name = "country")

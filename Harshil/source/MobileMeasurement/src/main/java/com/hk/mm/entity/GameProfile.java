@@ -3,7 +3,6 @@ package com.hk.mm.entity;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -29,7 +28,7 @@ public class GameProfile {
 		this.gameProfileId = gameProfileId;
 	}
 
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL)
 	public User getUser() {
 		return user;
 	}
@@ -38,7 +37,7 @@ public class GameProfile {
 		this.user = user;
 	}
 
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "game_library", cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL)
 	public GameLibrary getGameLibrary() {
 		return gameLibrary;
 	}

@@ -5,7 +5,6 @@ import java.sql.Date;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -17,9 +16,7 @@ import javax.persistence.Table;
 public class CallLogs {
 
 	private long callLogId;
-
 	private User user;
-
 	private String country;
 	private long total_mobileRx;
 	private long total_mobileTx;
@@ -38,7 +35,7 @@ public class CallLogs {
 		this.callLogId = callLogId;
 	}
 
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL)
 	public User getUser() {
 		return user;
 	}

@@ -6,7 +6,6 @@ import java.sql.Time;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -18,9 +17,13 @@ import javax.persistence.Table;
 public class UserAvaillableTimes {
 
 	private long id;
+
 	private User user;
+
 	private Time fromTime;
+
 	private Time toTime;
+
 	private Date createdAt;
 
 	@Id
@@ -34,7 +37,7 @@ public class UserAvaillableTimes {
 		this.id = id;
 	}
 
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL)
 	public User getUser() {
 		return user;
 	}
@@ -43,7 +46,7 @@ public class UserAvaillableTimes {
 		this.user = user;
 	}
 
-	@Column(name = "from_time", columnDefinition = "TIME")
+	@Column(name = "from_time")
 	public Time getFromTime() {
 		return fromTime;
 	}
@@ -52,7 +55,7 @@ public class UserAvaillableTimes {
 		this.fromTime = fromTime;
 	}
 
-	@Column(name = "to_time", columnDefinition = "TIME")
+	@Column(name = "to_time")
 	public Time getToTime() {
 		return toTime;
 	}
