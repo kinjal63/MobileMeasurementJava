@@ -1,25 +1,44 @@
 package com.hk.mm.controller;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.sql.Date;
 import java.sql.Time;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hk.mm.common.NotificationUtils;
+import com.hk.mm.entity.DataUsage;
+import com.hk.mm.entity.Rssi;
 import com.hk.mm.entity.User;
 import com.hk.mm.entity.UserAvaillableTimes;
 import com.hk.mm.exception.ServiceNotAcceptable;
@@ -127,12 +146,13 @@ public class UserController {
 		User toUser = userService.findByUserId(Long.valueOf(dUser.getToUserId()));
 		if (toUser == null) {
 			throw new ServiceUnauthorized("Invalid to userId");
-		}	
-		NotificationUtils.sendBluetoothAddress(Long.valueOf(dUser.getUserId()), toUser.getDeviceToken(), dUser.getBluetoothAddress());
-		
+		}
+		NotificationUtils.sendBluetoothAddress(Long.valueOf(dUser.getUserId()), toUser.getDeviceToken(),
+				dUser.getBluetoothAddress());
+
 		DUser resObj = new DUser();
 		resObj.setMessage("Success");
-		return new ResponseEntity<DUser>(resObj, HttpStatus.OK);	
+		return new ResponseEntity<DUser>(resObj, HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/uploadImage", method = RequestMethod.POST)
@@ -142,6 +162,144 @@ public class UserController {
 		}
 		System.out.println("Request parames : " + requestVO.toString());
 		return null;
+	}
+
+	@RequestMapping(value = "/recordRSSI", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<DUser> recordRSSI(@RequestHeader("authToken") final String authToken,
+			@RequestBody final DUser dUser) {
+		if (!isValid(authToken)) {
+			throw new ServiceUnauthorized("Invalid auth token");
+		}
+		User user = userService.findByUserId(Long.valueOf(dUser.getUserId()));
+		if (user == null) {
+			throw new ServiceUnauthorized("User unauthorized");
+		}
+		
+		//userId, deviceId, rssi, latitude, longitude, operator_name, timestamp
+		Rssi rssi = new Rssi();
+		rssi.setUserId(user.getUserId());
+		rssi.setDeviceId(dUser.getDeviceId());
+		rssi.setRssi(Double.valueOf(dUser.getRssi()));
+		rssi.setLatitude(Long.valueOf(dUser.getLatitude()));
+		rssi.setLongitude(Long.valueOf(dUser.getLongitude()));
+		rssi.setOperatorName(dUser.getOperatorName());
+		rssi.setTimestamp(new Date(System.currentTimeMillis()));
+		userService.saveRssiData(rssi);
+		
+		DUser resObj = new DUser();
+		resObj.setMessage("Success");
+		return new ResponseEntity<DUser>(resObj, HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/saveDataUsage", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<DUser> saveDataUsage(@RequestHeader("authToken") final String authToken,
+			@RequestBody final DUser dUser) {
+		if (!isValid(authToken)) {
+			throw new ServiceUnauthorized("Invalid auth token");
+		}
+		User user = userService.findByUserId(Long.valueOf(dUser.getUserId()));
+		if (user == null) {
+			throw new ServiceUnauthorized("User unauthorized");
+		}
+		
+		//userId, country, deviceId, mobileTx, mobileRx, wifiTx, wifiRx, longitude, latitude, operator_name, timestamp
+		DataUsage dataUsage = new DataUsage();
+		dataUsage.setUserId(user.getUserId());
+		dataUsage.setCountry(dUser.getCountry());
+		dataUsage.setDeviceId(dUser.getDeviceId());
+		dataUsage.setMobileTx(dUser.getMobileTx());
+		dataUsage.setMobileRx(dUser.getMobileRx());
+		dataUsage.setWifiTx(dUser.getWifiTx());
+		dataUsage.setWifiRx(dUser.getWifiRx());
+		dataUsage.setLongitude(Double.valueOf(dUser.getLongitude()));
+		dataUsage.setLatitude(Double.valueOf(dUser.getLatitude()));
+		dataUsage.setOperatorName(dUser.getOperatorName());
+		dataUsage.setTimestamp(new Date(System.currentTimeMillis()));
+		
+		userService.saveDataUsage(dataUsage);
+		
+		DUser resObj = new DUser();
+		resObj.setMessage("Success");
+		return new ResponseEntity<DUser>(resObj, HttpStatus.OK);
+	}
+	
+	private static String sendNotification()
+	{
+		final String uri = "https://api.instapush.im/v1/post";
+	     
+		NullHostnameVerifier verifier = new NullHostnameVerifier(); 
+		MySimpleClientHttpRequestFactory requestFactory = new  MySimpleClientHttpRequestFactory(verifier,null);
+			
+	    RestTemplate restTemplate = new RestTemplate();
+	    restTemplate.setRequestFactory(requestFactory);
+	    
+		HttpHeaders headers = new HttpHeaders();
+	    headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+	    headers.set("x-instapush-appid", "581c19e0a4c48ac98ab0390b");
+	    headers.set("x-instapush-appsecret", "8ae91fa6799a86b2d8e00183892fb234");
+	    headers.set("Content-Type", "application/json");
+	    
+	    String str = "{\"event\":\"test\",\"trackers\":{\"tracker\":\"Data is submitted for user. You can track it here... http://www.google.com/\"}}";
+//	    		+ "Transmitted bytes: + transmitted_bytes + \", Received bytes:\" + received_bytes + \"}}";
+	    HttpEntity<String> entity = new HttpEntity(str, headers);
+	    entity.getBody();
+	     
+	    ResponseEntity<String> result = restTemplate.exchange(uri, HttpMethod.POST, entity, String.class);
+	     
+	    return result.getBody();
+	}
+	
+	static class NullHostnameVerifier implements HostnameVerifier {
+        public boolean verify(String hostname, SSLSession session) {
+           return true;
+        }
+     }
+	
+	static class MySimpleClientHttpRequestFactory extends SimpleClientHttpRequestFactory {
+
+        private final HostnameVerifier verifier;
+        private final String cookie;
+
+        public MySimpleClientHttpRequestFactory(HostnameVerifier verifier ,String cookie) {
+            this.verifier = verifier;
+            this.cookie = cookie;
+        }
+
+        @Override
+        protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
+            if (connection instanceof HttpsURLConnection) {
+                ((HttpsURLConnection) connection).setHostnameVerifier(verifier);
+                ((HttpsURLConnection) connection).setSSLSocketFactory(trustSelfSignedSSL().getSocketFactory());
+                ((HttpsURLConnection) connection).setAllowUserInteraction(true);
+                String rememberMeCookie = cookie == null ? "" : cookie; 
+                ((HttpsURLConnection) connection).setRequestProperty("Cookie", rememberMeCookie);
+            }
+            super.prepareConnection(connection, httpMethod);
+        }
+
+        public SSLContext trustSelfSignedSSL() {
+            try {
+                SSLContext ctx = SSLContext.getInstance("TLS");
+                X509TrustManager tm = new X509TrustManager() {
+
+                    public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {
+                    }
+
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+                };
+                ctx.init(null, new TrustManager[] { tm }, null);
+                SSLContext.setDefault(ctx);
+                return ctx;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            return null;
+        }
 	}
 
 	private boolean isValid(String authToken) {

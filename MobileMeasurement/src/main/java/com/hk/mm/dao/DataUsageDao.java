@@ -4,9 +4,9 @@ import javax.transaction.Transactional;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hk.mm.entity.UserNotifications;
+import com.hk.mm.entity.DataUsage;
 
 @Transactional
-public interface UserNotificationDao extends CrudRepository<UserNotifications, Long>{
+public interface DataUsageDao extends CrudRepository<DataUsage, Long> {
 
 }

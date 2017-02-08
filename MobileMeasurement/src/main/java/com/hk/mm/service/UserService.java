@@ -5,10 +5,14 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.hk.mm.dao.DataUsageDao;
 import com.hk.mm.dao.UserAvailabilityDao;
 import com.hk.mm.dao.UserAvailabilityTimeDao;
 import com.hk.mm.dao.UserDao;
 import com.hk.mm.dao.UserNotificationDao;
+import com.hk.mm.dao.UserRssiDao;
+import com.hk.mm.entity.DataUsage;
+import com.hk.mm.entity.Rssi;
 import com.hk.mm.entity.User;
 import com.hk.mm.entity.UserAvailability;
 import com.hk.mm.entity.UserAvaillableTimes;
@@ -25,9 +29,15 @@ public class UserService {
 
 	@Autowired
 	private UserNotificationDao notificationDao;
-	
+
 	@Autowired
 	private UserAvailabilityDao userAvailabilityDao;
+
+	@Autowired
+	private UserRssiDao userRssiDao;
+
+	@Autowired
+	private DataUsageDao dataUsageDao;
 
 	public User findByEmail(final String email) {
 		return userDao.findByEmail(email);
@@ -44,14 +54,21 @@ public class UserService {
 	public void addUserTime(final UserAvaillableTimes availlableTimes) {
 		availabilityTimeDao.save(availlableTimes);
 	}
-	
-	public UserAvailability findUserAvailable(final User user)
-	{
+
+	public UserAvailability findUserAvailable(final User user) {
 		return userAvailabilityDao.findByUser(user);
 	}
 
 	public void addUserNotification(final UserNotifications userNotifications) {
 		notificationDao.save(userNotifications);
 	}
-	
+
+	public void saveRssiData(final Rssi rssi) {
+		userRssiDao.save(rssi);
+	}
+
+	public void saveDataUsage(final DataUsage dataUsage) {
+		dataUsageDao.save(dataUsage);
+	}
+
 }
