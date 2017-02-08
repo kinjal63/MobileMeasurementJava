@@ -1,0 +1,27 @@
+
+Web services list
+
+usercontroller
+1.  user registration
+2.  user login = finished.
+3.  update user availability = not required
+4.  add user time  = finished
+5.  send remote user input = finished
+6.  upload image = 
+7.  save/record RSSI = finished
+8.  save data usage = finished
+
+gamecontroller
+1. add game
+2. get near by game list = finished (Changes required)
+3. get game list = finished
+4. edit game
+5. delete game = finished (foreign key constraint issue)
+6. get mutual games = Need to understand existing query
+
+appcontroller
+1.  save app data = Need to understand existing query
+2.  aggregate call duration
+3.  Get countries list
+4.  Get countries by id 
+5.  send connection invite

@@ -1,0 +1,111 @@
+1. User login
+
+URL:
+http://localhost:8080/user/login
+
+Request: {"email":"kinjal@gmail.com"}
+Response:
+{
+  "authToken": "AER934LJS9DFMER0KEFE"
+}
+
+========================
+
+2. Add user time
+URL: http://localhost:8080/user/addTime
+Request Header :
+{"authToken": "AER934LJS9DFMER0KEFE"}
+Request:
+{"fromTime":"11:50:34","toTime":"11:50:34","userId":"28"}
+Response:
+{"message":"Success"}
+
+Note : user notification code commented as constaint issue
+
+========================
+3. send remote user input
+
+URL: http://localhost:8080/user/sendRemoteUserInput
+Request Header :
+{"authToken": "AER934LJS9DFMER0KEFE"}
+Request:
+{"userId":"28","toUserId":"29","accept":"true","bluetoothAddress":"a291sdf916df9161df9d"}
+Response:
+{"message":"Success"}
+
+======================
+4. user registration
+======================
+5. upload image
+======================
+6. add game
+======================
+7. Get near by game list (implemented just need to verify)
+======================
+8. Get game list
+
+URL: http://localhost:8080/game/getGameList
+Request Header :
+{"authToken": "AER934LJS9DFMER0KEFE"}
+Response:
+[
+  {
+    "gameName": "Counterstrike",
+    "gamePackageName": "com.counterstrike",
+    "gameId": 21,
+    "gameImagePath": "https://res.cloudinary.com/dmffogznf/image/uplaoad/v1479928123/rousol4ks8ulr0iog4xo.jpg",
+    "gameNetworkType": 0
+  },
+  {
+    "gameName": "MumbleBee",
+    "gamePackageName": "knot.be.mumblebee",
+    "gameId": 41,
+    "gameImagePath": "https://res.cloudinary.com/dmffogznf/image/upload/v1480353611/o92d4vf9vrhdaddx71wh.jpg",
+    "gameNetworkType": 0
+  }
+]
+=============================
+9. delete game (Foreign key constaint issue)
+URL: http://localhost:8080/game/deleteGame
+Request Header :
+{"authToken": "AER934LJS9DFMER0KEFE"}
+Response:
+{
+	"message":"Success"
+}
+=============================
+10. Get mutual games
+=============================
+11. save/record RSSI
+
+URL: http://localhost:8080/user/recordRSSI
+Request Header :
+{"authToken": "AER934LJS9DFMER0KEFE"}
+Request:
+{"userId":"27","deviceId":"adf11sfd191d9f191df","rssi":"-95","latitude":"18","longitude":"55","operator_name":"AIRTEL INDIA"}
+Response:
+{
+	"message":"Success"
+}
+=============================
+12. save data usage
+
+URL: http://localhost:8080/user/saveDataUsage
+Request Header :
+{"authToken": "AER934LJS9DFMER0KEFE"}
+Request:
+{"userId":"27","country":"India","deviceId":"adf11sfd191d9f191df","mobileTx":"0","mobileRx":"0","wifiTx":"6666","wifiRx":"2929",
+"latitude":"18","longitude":"55","operator_name":"AIRTEL INDIA"}
+Response:
+{
+	"message":"Success"
+}
+
+
+
+
+
+
+
+
+
