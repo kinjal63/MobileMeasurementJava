@@ -21,7 +21,7 @@ gamecontroller
 
 appcontroller
 1.  save app data = Need to understand existing query
-2.  aggregate call duration
-3.  Get countries list
-4.  Get countries by id 
+2.  aggregate call duration = finished (din't understand how the hell it's working, developed as it was existing)
+3.  Get countries list = finished
+4.  Get countries by id = finished
 5.  send connection invite
